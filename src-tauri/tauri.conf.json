@@ -14,10 +14,14 @@
     "allowlist": {
       "all": true
     },
+    "systemTray": {
+      "iconPath": "icons/icon.png",
+      "iconAsTemplate": true
+    },
     "bundle": {
       "active": true,
       "category": "DeveloperTool",
-      "copyright": "",
+      "copyright": "Oliver Butler",
       "deb": {
         "depends": []
       },
@@ -29,7 +33,7 @@
         "icons/icon.icns",
         "icons/icon.ico"
       ],
-      "identifier": "com.tauri.dev",
+      "identifier": "com.db-studio.dev",
       "longDescription": "",
       "macOS": {
         "entitlements": null,
@@ -56,10 +60,10 @@
     "windows": [
       {
         "fullscreen": false,
-        "height": 600,
+        "height": 1000,
         "resizable": true,
         "title": "DB Studio",
-        "width": 800
+        "width": 1100
       }
     ]
   }

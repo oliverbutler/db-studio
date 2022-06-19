@@ -23,6 +23,7 @@
     "@tauri-apps/api": "^1.0.1",
     "classnames": "^2.3.1",
     "solid-heroicons": "^2.0.3",
-    "solid-js": "^1.4.2"
+    "solid-js": "^1.4.2",
+    "zod": "^3.17.3"
   }
 }

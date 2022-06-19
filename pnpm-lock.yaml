@@ -12,12 +12,14 @@ specifiers:
   typescript: ^4.6.4
   vite: ^2.9.9
   vite-plugin-solid: ^2.2.6
+  zod: ^3.17.3
 
 dependencies:
   '@tauri-apps/api': 1.0.1
   classnames: 2.3.1
   solid-heroicons: 2.0.3
   solid-js: 1.4.2
+  zod: 3.17.3
 
 devDependencies:
   '@tauri-apps/cli': 1.0.0
@@ -1402,3 +1404,7 @@ packages:
     resolution: {integrity: sha512-r3vXyErRCYJ7wg28yvBY5VSoAF8ZvlcW9/BwUzEtUsjvX/DKs24dIkuwjtuprwJJHsbyUbLApepYTR1BN4uHrg==}
     engines: {node: '>= 6'}
     dev: true
+
+  /zod/3.17.3:
+    resolution: {integrity: sha512-4oKP5zvG6GGbMlqBkI5FESOAweldEhSOZ6LI6cG+JzUT7ofj1ZOC0PJudpQOpT1iqOFpYYtX5Pw0+o403y4bcg==}
+    dev: false

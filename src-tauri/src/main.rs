@@ -4,6 +4,8 @@
 )]
 
 use cocoa::appkit::{NSWindow, NSWindowStyleMask, NSWindowTitleVisibility};
+use serde::{Deserialize, Serialize};
+use std::path::Path;
 use tauri::Manager;
 use tauri::MenuEntry;
 use tauri::Runtime;
@@ -53,8 +55,54 @@ impl<R: Runtime> WindowExt for Window<R> {
 }
 
 #[tauri::command]
-fn greet(name: &str) -> String {
-  format!("Hello, {}!", name)
+fn get_connections() -> Vec<AppConnection> {
+  let state = load_app_state_from_file();
+
+  state.connections
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+enum ConnectionEnvironment {
+  Local,
+  Dev,
+  Staging,
+  Production,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct AppConnection {
+  pub name: String,
+  pub url: String,
+  pub environment: ConnectionEnvironment,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct AppState {
+  pub connections: Vec<AppConnection>,
+}
+
+fn save_app_state_to_file(state: &AppState) {
+  let path = Path::new("app_state.json");
+  let mut file = std::fs::File::create(path).unwrap();
+  serde_json::to_writer_pretty(&mut file, state).unwrap();
+}
+
+fn load_app_state_from_file() -> AppState {
+  create_app_state_if_missing();
+  let path = Path::new("app_state.json");
+  let mut file = std::fs::File::open(path).unwrap();
+  let state: AppState = serde_json::from_reader(&mut file).unwrap();
+  state
+}
+
+fn create_app_state_if_missing() {
+  let path = Path::new("app_state.json");
+  if !path.exists() {
+    let state = AppState {
+      connections: vec![],
+    };
+    save_app_state_to_file(&state);
+  }
 }
 
 fn main() {
@@ -68,11 +116,17 @@ fn main() {
         CustomMenuItem::new("hello", "Hello").into(),
       ]),
     ))]))
-    .invoke_handler(tauri::generate_handler![greet])
+    .invoke_handler(tauri::generate_handler![get_connections])
     .setup(|app| {
       let win = app.get_window("main").unwrap();
       win.set_transparent_titlebar(true, false);
 
+      #[cfg(debug_assertions)] // only include this code on debug builds
+      {
+        let window = app.get_window("main").unwrap();
+        window.open_devtools();
+        window.close_devtools();
+      }
       Ok(())
     })
     .run(context)

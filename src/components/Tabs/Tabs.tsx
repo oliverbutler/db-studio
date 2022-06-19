@@ -1,19 +1,13 @@
 import classNames from 'classnames';
 import { Component, createSelector, For, JSX } from 'solid-js';
-import {
-  addTab,
-  currentConnection,
-  currentConnectionIndex,
-  ITab,
-  removeTab,
-  setCurrentTab,
-  state,
-} from '../../state';
+import { currentConnection } from '../../data/connections';
+import { ITab, state } from '../../data/state';
+import { addTab, removeTab, setCurrentTab } from '../../data/tabs';
 import { CurrentTab } from './CurrentTab';
 
 export const Tabs: Component = () => {
   const isTabActive = createSelector(
-    () => state.connection[currentConnectionIndex].currentTabId
+    () => currentConnection()?.currentTabId || false
   );
 
   const handleClickTabClose = (e: MouseEvent, tab: ITab) => {
@@ -25,7 +19,7 @@ export const Tabs: Component = () => {
   return (
     <div class="h-full w-full">
       <div class="flex flex-row gap-2">
-        <For each={currentConnection().tabs}>
+        <For each={currentConnection()?.tabs}>
           {(tab) => (
             <div
               onClick={() => setCurrentTab(tab.id)}
