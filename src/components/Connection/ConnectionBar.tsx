@@ -63,7 +63,7 @@ export const ConnectionBar: Component = () => {
       <div
         data-tauri-drag-region
         class={classNames(
-          'w-full cursor-default select-none bg-purple-500/60 my-1 px-2 py-0.5 rounded-sm text-xs font-mono  truncate',
+          'w-full cursor-default select-none my-1 px-2 py-0.5 rounded-sm text-xs font-mono  truncate',
           getEnvironmentColour(
             currentConnection()?.environment || Environment.Local
           )
