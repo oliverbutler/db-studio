@@ -5,6 +5,8 @@
     "moduleResolution": "node",
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
+    "strict": true,
+    "strictNullChecks": true,
     "jsx": "preserve",
     "jsxImportSource": "solid-js",
     "types": ["vite/client"],

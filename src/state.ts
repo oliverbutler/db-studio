@@ -19,6 +19,7 @@ interface Connection {
     ssl: boolean;
   };
   name: string;
+  dbType: string;
   environment: Environment;
   tabs: ITab[];
   currentTabId: string | null;
@@ -60,7 +61,8 @@ const [state, setState] = createStore<State>({
       id: createUniqueId(),
       tabs: [emptyTab],
       currentTabId: emptyTab.id,
-      name: 'Default',
+      name: 'Local',
+      dbType: 'MySQL 8.0.29',
       environment: Environment.Dev,
       connectionInfo: {
         url: 'https://db.com',
@@ -113,7 +115,7 @@ const lastElementMatching = <T>(
 
 export const removeTab = (tabId: string) => {
   const lastTabNotCurrent = lastElementMatching(
-    currentConnection().tabs,
+    [...currentConnection().tabs],
     (tab) => tab.id !== tabId
   );
 
