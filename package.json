@@ -6,7 +6,8 @@
     "dev": "vite",
     "build": "vite build",
     "serve": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "dev:both": "tauri dev"
   },
   "license": "MIT",
   "devDependencies": {
@@ -20,6 +21,7 @@
   },
   "dependencies": {
     "@tauri-apps/api": "^1.0.1",
+    "classnames": "^2.3.1",
     "solid-js": "^1.4.2"
   }
 }
