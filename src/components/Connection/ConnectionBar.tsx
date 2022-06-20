@@ -65,7 +65,7 @@ export const ConnectionBar: Component = () => {
   return (
     <div
       data-tauri-drag-region
-      class="gap-x-1 pl-20 py-0.5 dark:bg-dark-800 border-b-2 border-b-dark-900 text-sm flex flex-row items-center"
+      class="gap-x-1 pl-20 py-0.5  border-b-2 border-b-dark-900 text-sm flex flex-row items-center"
     >
       <Modal
         trigger={({ open }) => (

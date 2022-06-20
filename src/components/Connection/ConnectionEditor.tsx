@@ -5,6 +5,7 @@ import {
   setCurrentConnection,
 } from '../../data/connections';
 import { Environment, state } from '../../data/state';
+import Button, { ButtonColour } from '../Button';
 import { Input } from '../Input';
 import { Select } from '../Select';
 import { ConnectionBadge } from './ConnectionBar';
@@ -19,7 +20,7 @@ export const ConnectionEditor: Component = () => {
             {(connection) => (
               <div
                 class={classNames(
-                  'flex flex-col hover:bg-dark-800 px-6 py-2 cursor-pointer border-l-2 border-l-transparent',
+                  'flex flex-col hover:bg-dark-700 px-6 py-2 cursor-pointer border-l-2 border-l-transparent',
                   {
                     'border-l-white': connection.id === currentConnection()?.id,
                   }
@@ -64,6 +65,13 @@ export const ConnectionEditor: Component = () => {
             value={currentConnection()?.connectionInformation.port}
           />
           <Input label="Password" type="password" value={'fake-password'} />
+          <Button
+            class="mt-4"
+            variation="primary"
+            colour={ButtonColour.Secondary}
+          >
+            Save
+          </Button>
         </div>
       </div>
     </div>

@@ -132,12 +132,12 @@ fn main() {
       let win = app.get_window("main").unwrap();
       win.set_transparent_titlebar(true, false);
 
-      #[cfg(debug_assertions)] // only include this code on debug builds
-      {
-        let window = app.get_window("main").unwrap();
-        window.open_devtools();
-        window.close_devtools();
-      }
+      // #[cfg(debug_assertions)] // only include this code on debug builds
+      // {
+      //   let window = app.get_window("main").unwrap();
+      //   window.open_devtools();
+      //   window.close_devtools();
+      // }
 
       #[cfg(target_os = "macos")]
       apply_vibrancy(&win, NSVisualEffectMaterial::HudWindow)

@@ -19,7 +19,7 @@ const ModalContent: Component<{
       class="fixed inset-0 bg-dark-900/60 flex flex-col items-center justify-center transition-all overflow-hidden backdrop-blur-sm "
       style={{ 'z-index': 999 }}
     >
-      <div class="bg-dark-900">
+      <div class="bg-dark-800">
         {props.children({ close: () => props.setIsOpen(false) })}
       </div>
     </div>
