@@ -5,7 +5,7 @@ export const CurrentTab: Component = () => {
   return (
     <Show when={currentTab()}>
       {(tab) => (
-        <div class="bg-black h-full w-full">
+        <div class="bg-dark-900 h-full w-full">
           <textarea
             autoCapitalize="off"
             class="bg-transparent h-full"

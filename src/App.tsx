@@ -9,7 +9,7 @@ const App: Component = () => {
       <ConnectionBar />
       <div class="flex flex-col h-full">
         <div class="flex flex-row h-full ">
-          <div class="flex flex-col w-1/4 pr-4 bg-zinc-800 border-r-2 border-r-zinc-900">
+          <div class="flex flex-col w-1/4 pr-4 border-r-2 border-r-dark-900 bg-dark-900/50">
             <ConnectionSidebar />
           </div>
           <div class="w-full">

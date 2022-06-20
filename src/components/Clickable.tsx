@@ -12,7 +12,7 @@ export const Clickable: Component<ClickableProps> = (props) => {
     <button
       {...others}
       class={classNames(
-        'hover:bg-gray-900/50 p-1  rounded-sm select-none cursor-pointer',
+        'hover:bg-dark-900/50 p-1  rounded-sm select-none cursor-pointer',
         local.class
       )}
     >

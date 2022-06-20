@@ -1,3 +1,5 @@
+const colors = require('tailwindcss/colors');
+
 module.exports = {
   content: [
     './index.html',
@@ -5,7 +7,13 @@ module.exports = {
   ],
   darkMode: 'class',
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        primary: colors.sky,
+        secondary: colors.pink,
+        dark: { ...colors.zinc, 950: '#101012' },
+      },
+    },
   },
   plugins: [],
 };

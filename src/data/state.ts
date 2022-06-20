@@ -7,6 +7,12 @@ export enum Environment {
   Production = 'Production',
 }
 
+export interface ConnectionInformation {
+  user: string;
+  database: string;
+  host: string;
+  port: number;
+}
 export interface Connection {
   id: string;
   name: string;
@@ -14,6 +20,7 @@ export interface Connection {
   environment: Environment;
   tabs: ITab[];
   currentTabId: string | null;
+  connectionInformation: ConnectionInformation;
 }
 
 export enum TabType {

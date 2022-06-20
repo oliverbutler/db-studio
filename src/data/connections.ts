@@ -2,12 +2,17 @@ import { invoke } from '@tauri-apps/api';
 import { createMemo, createUniqueId } from 'solid-js';
 import { produce } from 'solid-js/store';
 import { z } from 'zod';
-import { Connection, Environment, setState, state } from './state';
+import { Connection, Environment, setState, state, TabType } from './state';
 
 const AppConnectionSchema = z.object({
   name: z.string(),
-  url: z.string(),
   environment: z.nativeEnum(Environment),
+  connection_information: z.object({
+    user: z.string(),
+    database: z.string(),
+    host: z.string(),
+    port: z.number(),
+  }),
 });
 
 export type AppConnection = z.infer<typeof AppConnectionSchema>;
@@ -21,13 +26,23 @@ invoke('get_connections').then((response: unknown) => {
     (acc, connection) => {
       const connectionId = createUniqueId();
 
+      const emptyTab = {
+        id: createUniqueId(),
+        title: `Query #1`,
+        content: {
+          type: TabType.Query,
+          query: '',
+        },
+      };
+
       acc[connectionId] = {
         id: connectionId,
         name: connection.name,
-        dbType: connection.url.split(':')[0],
+        dbType: 'MySQL',
         environment: connection.environment,
-        tabs: [],
-        currentTabId: null,
+        tabs: [emptyTab],
+        currentTabId: emptyTab.id,
+        connectionInformation: connection.connection_information,
       };
 
       return acc;
