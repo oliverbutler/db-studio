@@ -12,7 +12,7 @@ use tauri::Runtime;
 use tauri::Window;
 use tauri::{CustomMenuItem, Menu, MenuItem, Submenu};
 
-use window_vibrancy::{apply_blur, apply_vibrancy, NSVisualEffectMaterial};
+use window_vibrancy::{apply_vibrancy, NSVisualEffectMaterial};
 
 pub trait WindowExt {
   #[cfg(target_os = "macos")]
@@ -63,7 +63,7 @@ fn get_connections() -> Vec<AppConnection> {
   state.connections
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Copy, Clone)]
 enum ConnectionEnvironment {
   Local,
   Dev,
@@ -71,7 +71,7 @@ enum ConnectionEnvironment {
   Production,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 struct AppConnectionInformation {
   user: String,
   password: String,
@@ -80,16 +80,35 @@ struct AppConnectionInformation {
   port: i64,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
+struct AppConnectionInformationUpdate {
+  user: Option<String>,
+  password: Option<String>,
+  database: Option<String>,
+  host: Option<String>,
+  port: Option<i64>,
+  environment: Option<ConnectionEnvironment>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 struct AppConnection {
-  pub name: String,
-  pub environment: ConnectionEnvironment,
-  pub connection_information: AppConnectionInformation,
+  id: String,
+  name: String,
+  environment: ConnectionEnvironment,
+  connection_information: AppConnectionInformation,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+struct AppConnectionUpdate {
+  id: String,
+  name: Option<String>,
+  environment: Option<ConnectionEnvironment>,
+  connection_information: Option<AppConnectionInformationUpdate>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 struct AppState {
-  pub connections: Vec<AppConnection>,
+  connections: Vec<AppConnection>,
 }
 
 fn save_app_state_to_file(state: &AppState) {
@@ -116,6 +135,95 @@ fn create_app_state_if_missing() {
   }
 }
 
+#[tauri::command]
+fn add_connection(connection: AppConnection) {
+  let mut state = load_app_state_from_file();
+
+  state.connections.push(connection);
+  save_app_state_to_file(&state);
+}
+
+#[tauri::command]
+fn update_connection(update: AppConnectionUpdate) {
+  println!("update_connection: {:?}", update);
+
+  let state = load_app_state_from_file();
+
+  let index = get_connection_index(&update.id);
+
+  if index == -1 {
+    return;
+  }
+
+  let new_connections = state
+    .connections
+    .iter()
+    .map(|connection| {
+      if connection.id == update.id {
+        let new_con = update.clone();
+
+        AppConnection {
+          id: new_con.id,
+          name: new_con.name.unwrap_or(connection.name.to_string()),
+          environment: new_con.environment.unwrap_or(connection.environment),
+          connection_information: match new_con.connection_information {
+            Some(connection_info) => AppConnectionInformation {
+              user: connection_info
+                .user
+                .unwrap_or(connection.connection_information.user.to_string()),
+              password: connection_info
+                .password
+                .unwrap_or(connection.connection_information.password.to_string()),
+              database: connection_info
+                .database
+                .unwrap_or(connection.connection_information.database.to_string()),
+              host: connection_info
+                .host
+                .unwrap_or(connection.connection_information.host.to_string()),
+              port: connection_info
+                .port
+                .unwrap_or(connection.connection_information.port),
+            },
+            None => connection.connection_information.clone(),
+          },
+        }
+      } else {
+        connection.clone()
+      }
+    })
+    .collect::<Vec<_>>();
+
+  let new_state = AppState {
+    connections: new_connections,
+  };
+
+  save_app_state_to_file(&new_state);
+}
+
+// -1 means no connection
+fn get_connection_index(connection_id: &String) -> i64 {
+  let state = load_app_state_from_file();
+
+  return state
+    .connections
+    .iter()
+    .position(|c| c.id == *connection_id)
+    .unwrap() as i64;
+}
+
+#[tauri::command]
+fn remove_connection(connection_id: String) {
+  let mut state = load_app_state_from_file();
+
+  let index = get_connection_index(&connection_id);
+
+  if index != -1 {
+    state.connections.remove(index as usize);
+  }
+
+  save_app_state_to_file(&state);
+}
+
 fn main() {
   let context = tauri::generate_context!();
   tauri::Builder::default()
@@ -127,17 +235,22 @@ fn main() {
         CustomMenuItem::new("hello", "Hello").into(),
       ]),
     ))]))
-    .invoke_handler(tauri::generate_handler![get_connections])
+    .invoke_handler(tauri::generate_handler![
+      get_connections,
+      update_connection,
+      add_connection,
+      remove_connection
+    ])
     .setup(|app| {
       let win = app.get_window("main").unwrap();
       win.set_transparent_titlebar(true, false);
 
-      // #[cfg(debug_assertions)] // only include this code on debug builds
-      // {
-      //   let window = app.get_window("main").unwrap();
-      //   window.open_devtools();
-      //   window.close_devtools();
-      // }
+      #[cfg(debug_assertions)] // only include this code on debug builds
+      {
+        let window = app.get_window("main").unwrap();
+        window.open_devtools();
+        window.close_devtools();
+      }
 
       #[cfg(target_os = "macos")]
       apply_vibrancy(&win, NSVisualEffectMaterial::HudWindow)

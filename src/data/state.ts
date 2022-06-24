@@ -8,16 +8,17 @@ export enum Environment {
 }
 
 export interface ConnectionInformation {
+  id: string;
   user: string;
+  environment: Environment;
+  name: string;
   database: string;
   host: string;
   port: number;
+  password: string | null;
 }
 export interface Connection {
   id: string;
-  name: string;
-  dbType: string;
-  environment: Environment;
   tabs: ITab[];
   currentTabId: string | null;
   connectionInformation: ConnectionInformation;

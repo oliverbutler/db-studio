@@ -1,27 +1,9 @@
-import { invoke } from '@tauri-apps/api';
 import { createMemo, createUniqueId } from 'solid-js';
 import { produce } from 'solid-js/store';
-import { z } from 'zod';
-import { Connection, Environment, setState, state, TabType } from './state';
+import { getConnections } from '../api';
+import { Connection, setState, state, TabType } from './state';
 
-const AppConnectionSchema = z.object({
-  name: z.string(),
-  environment: z.nativeEnum(Environment),
-  connection_information: z.object({
-    user: z.string(),
-    database: z.string(),
-    host: z.string(),
-    port: z.number(),
-  }),
-});
-
-export type AppConnection = z.infer<typeof AppConnectionSchema>;
-
-export const AppConnectionsSchema = z.array(AppConnectionSchema);
-
-invoke('get_connections').then((response: unknown) => {
-  const connections: AppConnection[] = AppConnectionsSchema.parse(response);
-
+getConnections().then((connections) => {
   const connectionsAsObject = connections.reduce<Record<string, Connection>>(
     (acc, connection) => {
       const connectionId = createUniqueId();
@@ -37,12 +19,18 @@ invoke('get_connections').then((response: unknown) => {
 
       acc[connectionId] = {
         id: connectionId,
-        name: connection.name,
-        dbType: 'MySQL',
-        environment: connection.environment,
         tabs: [emptyTab],
         currentTabId: emptyTab.id,
-        connectionInformation: connection.connection_information,
+        connectionInformation: {
+          id: connection.id,
+          user: connection.connection_information.user,
+          environment: connection.environment,
+          name: connection.name,
+          database: connection.connection_information.database,
+          host: connection.connection_information.host,
+          port: connection.connection_information.port,
+          password: null,
+        },
       };
 
       return acc;

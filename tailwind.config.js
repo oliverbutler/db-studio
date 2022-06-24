@@ -11,7 +11,7 @@ module.exports = {
       colors: {
         primary: colors.emerald,
         secondary: colors.teal,
-        dark: { ...colors.gray, 950: '#101012' },
+        dark: { ...colors.zinc, 950: '#101012' },
       },
     },
   },

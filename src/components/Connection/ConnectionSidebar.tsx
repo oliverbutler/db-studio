@@ -19,7 +19,7 @@ export const ConnectionSidebar: Component = () => {
               }
             )}
           >
-            {connection.name}
+            {connection.connectionInformation.name}
           </div>
         )}
       </For>
