@@ -6,8 +6,7 @@ import { currentConnection } from '../../data/connections';
 import { Environment } from '../../data/state';
 import classNames from 'classnames';
 import { Modal } from '../Modal';
-import { ConnectionEditor } from './ConnectionEditor';
-import { ConnectionEditorWrapper } from './ConnectionEditorWrapper';
+import { ConnectionsModal } from './ConnectionsModal';
 
 const ToolbarOption: Component<{
   children: JSX.Element;
@@ -75,7 +74,7 @@ export const ConnectionBar: Component = () => {
           </ToolbarOption>
         )}
       >
-        {({ close }) => <ConnectionEditorWrapper />}
+        {({ close }) => <ConnectionsModal close={close} />}
       </Modal>
       <ToolbarOption>
         <Icon path={collection} class="h-4" />
@@ -93,9 +92,12 @@ export const ConnectionBar: Component = () => {
           ).bgColour
         )}
       >
-        <Show when={currentConnection()} fallback={<span>No Connection</span>}>
-          {(connection) =>
-            `MySQL : ${connection.connectionInformation.name} : ${connection.connectionInformation.environment}`
+        <Show
+          when={currentConnection()?.connectionInformation}
+          fallback={<span>No Connection</span>}
+        >
+          {(connectionInformation) =>
+            `MySQL : ${connectionInformation.name} : ${connectionInformation.environment}`
           }
         </Show>
       </div>

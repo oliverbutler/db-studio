@@ -17,3 +17,7 @@ export const addEventListener = (
     document.removeEventListener(event, callback);
   });
 };
+
+export const deepClone = <T>(obj: T): T => {
+  return JSON.parse(JSON.stringify(obj));
+};

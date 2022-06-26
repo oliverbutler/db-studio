@@ -8,7 +8,10 @@ export enum Environment {
 }
 
 export interface ConnectionInformation {
-  id: string;
+  /**
+   * Id of the connection state.connections.[id]
+   */
+  connection_id: string;
   user: string;
   environment: Environment;
   name: string;
@@ -18,6 +21,9 @@ export interface ConnectionInformation {
   password: string | null;
 }
 export interface Connection {
+  /**
+   * Internal ID from Rust backend
+   */
   id: string;
   tabs: ITab[];
   currentTabId: string | null;
@@ -39,14 +45,23 @@ export interface ITab {
   content: TabQuery;
 }
 
+export interface Toast {
+  id: string;
+  message: string;
+  type: 'success' | 'error' | 'info';
+  duration?: number;
+}
+
 interface State {
   connections: Record<string, Connection>;
   currentConnectionId: string | null;
+  toasts: Toast[];
 }
 
 const [state, setState] = createStore<State>({
   connections: {},
   currentConnectionId: null,
+  toasts: [],
 });
 
 export { state, setState };

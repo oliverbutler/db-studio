@@ -1,3 +1,4 @@
+import classNames from 'classnames';
 import { Component, JSX, splitProps } from 'solid-js';
 
 interface InputProps extends JSX.InputHTMLAttributes<HTMLInputElement> {
@@ -5,10 +6,10 @@ interface InputProps extends JSX.InputHTMLAttributes<HTMLInputElement> {
 }
 
 export const Input: Component<InputProps> = (props) => {
-  const [innerProps, restProps] = splitProps(props, ['label']);
+  const [innerProps, restProps] = splitProps(props, ['label', 'class']);
 
   return (
-    <div class="flex flex-col">
+    <div class={classNames('flex flex-col', innerProps.class)}>
       <label class="text-sm text-dark-500">{innerProps.label}</label>
       <input
         class="bg-dark-900 px-2 rounded-md p-1 accent-primary-400"

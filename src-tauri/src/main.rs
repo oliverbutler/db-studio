@@ -4,13 +4,17 @@
 )]
 
 use cocoa::appkit::{NSWindow, NSWindowStyleMask, NSWindowTitleVisibility};
+use mysql::prelude::*;
+use mysql::*;
 use serde::{Deserialize, Serialize};
+use serde_json::Map;
 use std::path::Path;
 use tauri::Manager;
 use tauri::MenuEntry;
 use tauri::Runtime;
 use tauri::Window;
 use tauri::{CustomMenuItem, Menu, MenuItem, Submenu};
+use ts_rs::TS;
 
 use window_vibrancy::{apply_vibrancy, NSVisualEffectMaterial};
 
@@ -56,14 +60,83 @@ impl<R: Runtime> WindowExt for Window<R> {
   }
 }
 
-#[tauri::command]
-fn get_connections() -> Vec<AppConnection> {
-  let state = load_app_state_from_file();
-
-  state.connections
+#[derive(Serialize, Deserialize, TS)]
+#[ts(export)]
+struct InvokeGetConnectionsReturn {
+  connections: Vec<AppConnection>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Copy, Clone)]
+#[tauri::command]
+fn get_connections(_state: tauri::State<TauriState>) -> InvokeGetConnectionsReturn {
+  let state = load_app_state_from_file();
+
+  InvokeGetConnectionsReturn {
+    connections: state.connections,
+  }
+}
+
+#[derive(Serialize, Deserialize, TS)]
+#[ts(export)]
+struct QueryColumn {
+  name: String,
+  index: i64,
+}
+
+#[derive(Serialize, Deserialize, TS)]
+#[ts(export)]
+struct InvokeExecuteQueryReturn {
+  columns: Vec<QueryColumn>,
+  #[ts(type = "Record<string, unknown>[]")]
+  rows: Vec<Map<String, serde_json::Value>>,
+}
+
+#[tauri::command]
+fn execute_query(
+  state: tauri::State<TauriState>,
+  connection_id: String,
+  query: String,
+) -> InvokeExecuteQueryReturn {
+  let opts = Opts::from_url("mysql://user:password@127.0.0.1/db").unwrap();
+
+  let pool = Pool::new(opts).unwrap();
+
+  let mut connection = pool.get_conn().unwrap();
+
+  let rows: Vec<Row> = connection.query(query.as_str()).unwrap();
+
+  let mut result = Vec::new();
+  let mut columns = Vec::new();
+
+  for row in rows {
+    let mut row_vec = Map::new();
+
+    // If first row
+    if columns.is_empty() {
+      for (i, col) in row.columns().iter().enumerate() {
+        columns.push(QueryColumn {
+          name: col.name_str().to_string(),
+          index: i as i64,
+        });
+      }
+    }
+
+    for (i, column) in row.columns().iter().enumerate() {
+      let col_name = String::from(column.name_str());
+
+      let value: String = row.get(i).unwrap();
+      row_vec.insert(col_name, serde_json::json!(value));
+    }
+    result.push(row_vec);
+  }
+
+  InvokeExecuteQueryReturn {
+    columns: columns,
+    rows: result,
+  }
+}
+
+#[derive(Debug, Serialize, Deserialize, Copy, Clone, TS)]
+#[ts(export)]
 enum ConnectionEnvironment {
   Local,
   Dev,
@@ -71,26 +144,28 @@ enum ConnectionEnvironment {
   Production,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, TS)]
+#[ts(export)]
 struct AppConnectionInformation {
   user: String,
   password: String,
   database: String,
   host: String,
-  port: i64,
+  port: i32,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, TS)]
+#[ts(export)]
 struct AppConnectionInformationUpdate {
   user: Option<String>,
   password: Option<String>,
   database: Option<String>,
   host: Option<String>,
-  port: Option<i64>,
-  environment: Option<ConnectionEnvironment>,
+  port: Option<i32>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, TS)]
+#[ts(export)]
 struct AppConnection {
   id: String,
   name: String,
@@ -98,8 +173,9 @@ struct AppConnection {
   connection_information: AppConnectionInformation,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-struct AppConnectionUpdate {
+#[derive(Debug, Serialize, Deserialize, Clone, TS)]
+#[ts(export)]
+struct InvokeUpdateConnection {
   id: String,
   name: Option<String>,
   environment: Option<ConnectionEnvironment>,
@@ -144,15 +220,13 @@ fn add_connection(connection: AppConnection) {
 }
 
 #[tauri::command]
-fn update_connection(update: AppConnectionUpdate) {
-  println!("update_connection: {:?}", update);
-
+fn update_connection(update: InvokeUpdateConnection) -> bool {
   let state = load_app_state_from_file();
 
   let index = get_connection_index(&update.id);
 
   if index == -1 {
-    return;
+    return false;
   }
 
   let new_connections = state
@@ -198,6 +272,8 @@ fn update_connection(update: AppConnectionUpdate) {
   };
 
   save_app_state_to_file(&new_state);
+
+  true
 }
 
 // -1 means no connection
@@ -209,6 +285,29 @@ fn get_connection_index(connection_id: &String) -> i64 {
     .iter()
     .position(|c| c.id == *connection_id)
     .unwrap() as i64;
+}
+
+#[derive(Serialize, Deserialize, TS)]
+#[ts(export)]
+struct InvokeGetConnectionReturn {
+  connection: Option<AppConnection>,
+}
+
+#[tauri::command]
+fn get_connection(connection_id: String) -> InvokeGetConnectionReturn {
+  let index = get_connection_index(&connection_id);
+
+  if index == -1 {
+    return InvokeGetConnectionReturn { connection: None };
+  }
+
+  let state = load_app_state_from_file();
+
+  let connection = state.connections[index as usize].clone();
+
+  InvokeGetConnectionReturn {
+    connection: Some(connection),
+  }
 }
 
 #[tauri::command]
@@ -224,7 +323,41 @@ fn remove_connection(connection_id: String) {
   save_app_state_to_file(&state);
 }
 
+#[derive(Debug)]
+struct Connection {
+  connection: AppConnection,
+  pool: mysql::PooledConn,
+}
+
+fn db_init() -> mysql::PooledConn {
+  let opts = Opts::from_url("mysql://user:password@127.0.0.1/db").unwrap();
+
+  let pool = Pool::new(opts).unwrap();
+
+  let connection = pool.get_conn().unwrap();
+
+  connection
+}
+
+#[derive(Debug)]
+struct TauriState {
+  connections: Vec<Connection>,
+}
+
 fn main() {
+  let app_state = load_app_state_from_file();
+
+  let my_state: TauriState = TauriState {
+    connections: app_state
+      .connections
+      .iter()
+      .map(|connection| Connection {
+        connection: connection.clone(),
+        pool: db_init(),
+      })
+      .collect(),
+  };
+
   let context = tauri::generate_context!();
   tauri::Builder::default()
     .menu(Menu::with_items([MenuEntry::Submenu(Submenu::new(
@@ -235,11 +368,14 @@ fn main() {
         CustomMenuItem::new("hello", "Hello").into(),
       ]),
     ))]))
+    .manage(my_state)
     .invoke_handler(tauri::generate_handler![
       get_connections,
       update_connection,
       add_connection,
-      remove_connection
+      remove_connection,
+      get_connection,
+      execute_query,
     ])
     .setup(|app| {
       let win = app.get_window("main").unwrap();

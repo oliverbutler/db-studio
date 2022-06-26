@@ -2,6 +2,7 @@ import type { Component } from 'solid-js';
 import { ConnectionBar } from './components/Connection/ConnectionBar';
 import { ConnectionSidebar } from './components/Connection/ConnectionSidebar';
 import { Tabs } from './components/Tabs/Tabs';
+import { ToastContainer } from './components/Toasts/ToastContainer';
 
 const App: Component = () => {
   return (
@@ -17,6 +18,7 @@ const App: Component = () => {
           </div>
         </div>
       </div>
+      <ToastContainer />
     </div>
   );
 };

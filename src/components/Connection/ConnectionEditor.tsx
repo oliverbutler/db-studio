@@ -1,40 +1,32 @@
-import { Component, createEffect, createSignal, For } from 'solid-js';
-import { createStore, produce } from 'solid-js/store';
-import { currentConnection } from '../../data/connections';
+import { Component, createMemo } from 'solid-js';
+import { createMutable, createStore } from 'solid-js/store';
 import { Environment } from '../../data/state';
 import Button, { ButtonColour } from '../Button';
 import { Input } from '../Input';
 import { Select } from '../Select';
 import { ConnectionInformation } from '../../data/state';
 import { updateConnection } from '../../api';
+import { deepClone } from '../../utils';
 
 interface ConnectionEditorProps {
   connectionInformation: ConnectionInformation;
+  close: () => void;
 }
 
 const isValidEnvironment = (env: string): env is Environment =>
   Object.values(Environment).includes(env as Environment);
 
 export const ConnectionEditor: Component<ConnectionEditorProps> = (props) => {
-  const [fields, setFields] = createStore(props.connectionInformation);
+  const [fields, setFields] = createStore(
+    deepClone(props.connectionInformation)
+  );
 
   const handleSubmit = () => {
-    updateConnection({
-      id: fields.id,
-      name: fields.name,
-      environment: fields.environment,
-      connection_information: {
-        database: fields.database,
-        host: fields.host,
-        port: fields.port,
-        user: fields.user,
-        ...(fields.password ? { password: fields.password } : {}),
-      },
-    });
+    updateConnection(fields, () => props?.close());
   };
 
   return (
-    <div class="w-72 px-2 pb-2">
+    <form class="w-72 px-2 pb-2" onsubmit={(e) => e.preventDefault()}>
       <Input
         label="Name"
         value={fields.name}
@@ -58,21 +50,25 @@ export const ConnectionEditor: Component<ConnectionEditorProps> = (props) => {
         label="User"
         value={fields.user}
         onChange={(e) => setFields('user', e.currentTarget.value)}
+        autocapitalize="off"
       />
       <Input
         label="Database"
         value={fields.database}
         onChange={(e) => setFields('database', e.currentTarget.value)}
+        autocapitalize="off"
       />
       <Input
         label="Host"
         value={fields.host}
         onChange={(e) => setFields('host', e.currentTarget.value)}
+        autocapitalize="off"
       />
       <Input
         label="Port"
         value={fields.port}
         onChange={(e) => setFields('port', Number(e.currentTarget.value) ?? 0)}
+        type="number"
       />
       <Input
         label="Password"
@@ -80,15 +76,17 @@ export const ConnectionEditor: Component<ConnectionEditorProps> = (props) => {
         value={fields.password ?? ''}
         onChange={(e) => setFields('password', e.currentTarget.value)}
         placeholder="********"
+        autocapitalize="off"
       />
       <Button
         onClick={handleSubmit}
         class="mt-4"
         variation="primary"
         colour={ButtonColour.Secondary}
+        type="submit"
       >
         Save
       </Button>
-    </div>
+    </form>
   );
 };

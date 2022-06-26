@@ -1,9 +1,9 @@
 import { createMemo, createUniqueId } from 'solid-js';
 import { produce } from 'solid-js/store';
-import { getConnections } from '../api';
+import { api } from '../api';
 import { Connection, setState, state, TabType } from './state';
 
-getConnections().then((connections) => {
+api.getConnections().then((connections) => {
   const connectionsAsObject = connections.reduce<Record<string, Connection>>(
     (acc, connection) => {
       const connectionId = createUniqueId();
@@ -22,7 +22,7 @@ getConnections().then((connections) => {
         tabs: [emptyTab],
         currentTabId: emptyTab.id,
         connectionInformation: {
-          id: connection.id,
+          connection_id: connection.id,
           user: connection.connection_information.user,
           environment: connection.environment,
           name: connection.name,
@@ -41,7 +41,8 @@ getConnections().then((connections) => {
   setState(
     produce((state) => {
       state.connections = connectionsAsObject;
-      state.currentConnectionId = Object.keys(connectionsAsObject)[0];
+      state.currentConnectionId =
+        state.currentConnectionId ?? Object.keys(connectionsAsObject)[0];
     })
   );
 });
