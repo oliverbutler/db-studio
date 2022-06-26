@@ -1,4 +1,5 @@
 import { createStore, produce } from 'solid-js/store';
+import { QueryColumn } from '../../src-tauri/bindings/QueryColumn';
 
 export enum Environment {
   Local = 'Local',
@@ -37,6 +38,10 @@ export enum TabType {
 export interface TabQuery {
   type: TabType;
   query: string;
+  queryResponse: {
+    columns: Array<QueryColumn>;
+    rows: Record<string, unknown>[];
+  } | null;
 }
 
 export interface ITab {

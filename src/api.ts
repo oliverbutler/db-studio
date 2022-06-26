@@ -67,10 +67,7 @@ const getConnection = async (connectionId: string) => {
   return connection.connection;
 };
 
-const executeQuery = async (
-  connectionId: string,
-  query: string
-): Promise<unknown> => {
+const executeQuery = async (connectionId: string, query: string) => {
   const result = await invokeExecuteQuery({
     connectionId,
     query,
