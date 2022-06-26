@@ -3,7 +3,7 @@ import { InvokeGetConnectionsReturn } from './InvokeGetConnectionsReturn';
 import { InvokeExecuteQueryReturn } from './InvokeExecuteQueryReturn';
 import { InvokeGetConnectionReturn } from './InvokeGetConnectionReturn';
 import { InvokeUpdateConnection } from './InvokeUpdateConnection';
-import { AppConnection } from '../../src/api';
+import { AppConnection } from './AppConnection';
 
 export const invokeExecuteQuery = async (params: {
   connectionId: String;

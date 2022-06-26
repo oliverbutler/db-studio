@@ -1,51 +1,20 @@
-import { invoke } from '@tauri-apps/api';
 import { produce } from 'solid-js/store';
-import { z } from 'zod';
+import { AppConnection } from '../src-tauri/bindings/AppConnection';
 import {
   invokeAddConnection,
   invokeExecuteQuery,
   invokeGetConnection,
+  invokeGetConnections,
   invokeUpdateConnection,
 } from '../src-tauri/bindings/Invoke';
 import { ConnectionInformation, Environment, setState } from './data/state';
 import { addToast } from './data/toast';
+import { DeepPartial, RequiredKeys } from './utils';
 
-const AppConnectionSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  environment: z.nativeEnum(Environment),
-  connection_information: z.object({
-    user: z.string(),
-    database: z.string(),
-    password: z.string(),
-    host: z.string(),
-    port: z.number(),
-  }),
-});
+const getConnections = async () => {
+  const connections = await invokeGetConnections();
 
-// Schema with password
-const AppConnectionSchemaCreate = z.object({
-  id: z.string(),
-  name: z.string(),
-  environment: z.nativeEnum(Environment),
-  connection_information: z.object({
-    user: z.string(),
-    database: z.string(),
-    password: z.string(),
-    host: z.string(),
-    port: z.number(),
-  }),
-});
-
-export type AppConnection = z.infer<typeof AppConnectionSchema>;
-export type AppConnectionCreate = z.infer<typeof AppConnectionSchemaCreate>;
-
-export const AppConnectionsSchema = z.array(AppConnectionSchema);
-
-const getConnections = async (): Promise<AppConnection[]> => {
-  const connections = await invoke('get_connections');
-
-  return AppConnectionsSchema.parse(connections);
+  return connections.connections;
 };
 
 const addConnection = async (connection: AppConnection): Promise<void> => {
@@ -90,25 +59,13 @@ const updateConnection = async (
   successCallback();
 };
 
-const getConnection = async (
-  connectionId: string
-): Promise<AppConnection | null> => {
+const getConnection = async (connectionId: string) => {
   const connection = await invokeGetConnection({
     connectionId,
   });
 
-  return AppConnectionSchema.parse(connection);
+  return connection.connection;
 };
-
-type RequiredKeys<Type, Key extends keyof Type> = Type & {
-  [Property in Key]-?: Type[Property];
-};
-
-type DeepPartial<T> = T extends object
-  ? {
-      [P in keyof T]?: DeepPartial<T[P]>;
-    }
-  : T;
 
 const executeQuery = async (
   connectionId: string,

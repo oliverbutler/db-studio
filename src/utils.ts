@@ -21,3 +21,13 @@ export const addEventListener = (
 export const deepClone = <T>(obj: T): T => {
   return JSON.parse(JSON.stringify(obj));
 };
+
+export type RequiredKeys<Type, Key extends keyof Type> = Type & {
+  [Property in Key]-?: Type[Property];
+};
+
+export type DeepPartial<T> = T extends object
+  ? {
+      [P in keyof T]?: DeepPartial<T[P]>;
+    }
+  : T;

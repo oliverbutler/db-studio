@@ -5,7 +5,7 @@ import Button, { ButtonColour } from '../Button';
 import { Input } from '../Input';
 import { Select } from '../Select';
 import { ConnectionInformation } from '../../data/state';
-import { updateConnection } from '../../api';
+import { api } from '../../api';
 import { deepClone } from '../../utils';
 
 interface ConnectionEditorProps {
@@ -22,7 +22,7 @@ export const ConnectionEditor: Component<ConnectionEditorProps> = (props) => {
   );
 
   const handleSubmit = () => {
-    updateConnection(fields, () => props?.close());
+    api.updateConnection(fields, () => props?.close());
   };
 
   return (
