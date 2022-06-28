@@ -100,7 +100,7 @@ fn create_db_conn(connection: &AppConnectionInformation) -> mysql::PooledConn {
   connection
 }
 
-fn get_and_upsert_db_conn(state: &tauri::State<TauriState>, connection_id: &String) {
+fn connect_to_db_if_missing(state: &tauri::State<TauriState>, connection_id: &String) {
   let curr_connection = state
     .connections
     .iter()
@@ -124,7 +124,7 @@ fn execute_query(
   connection_id: String,
   query: String,
 ) -> Result<InvokeExecuteQueryReturn, String> {
-  get_and_upsert_db_conn(&state, &connection_id);
+  connect_to_db_if_missing(&state, &connection_id);
 
   let curr_connection = state
     .connections
@@ -163,8 +163,21 @@ fn execute_query(
     for (i, column) in row.columns().iter().enumerate() {
       let col_name = String::from(column.name_str());
 
-      let value: String = String::from(row.get(i).unwrap_or("".to_string()));
-      row_vec.insert(col_name, serde_json::json!(value));
+      let value: mysql::Value = row.get(i).unwrap_or(mysql::Value::NULL);
+      let value_as_string = match value {
+        mysql::Value::NULL => serde_json::Value::Null,
+        mysql::Value::Bytes(bytes) => serde_json::Value::String(String::from_utf8(bytes).unwrap()),
+        mysql::Value::Int(value) => serde_json::Value::Number(serde_json::Number::from(value)),
+        mysql::Value::Double(value) => {
+          serde_json::Value::Number(serde_json::Number::from_f64(value).unwrap())
+        }
+        mysql::Value::Float(value) => {
+          serde_json::Value::Number(serde_json::Number::from_f64(value as f64).unwrap())
+        }
+        _ => serde_json::Value::String(value.as_sql(false)),
+      };
+      println!("{}", value_as_string);
+      row_vec.insert(col_name, serde_json::json!(&value_as_string));
     }
     result.push(row_vec);
   }

@@ -1,5 +1,6 @@
 import { Component, Show } from 'solid-js';
 import { invokeExecuteQuery } from '../../../src-tauri/bindings/Invoke';
+import { api } from '../../api';
 import { currentConnection } from '../../data/connections';
 import { setState, state } from '../../data/state';
 import { currentTab, setCurrentTabValue } from '../../data/tabs';
@@ -11,10 +12,10 @@ export const CurrentTab: Component = () => {
     const conn = currentConnection();
 
     if (tab && conn) {
-      const result = await invokeExecuteQuery({
-        connectionId: conn.connectionInformation.connection_id,
-        query: tab.content.query,
-      });
+      const result = await api.executeQuery(
+        conn.connectionInformation.connection_id,
+        tab.content.query
+      );
 
       setState(
         'connections',
