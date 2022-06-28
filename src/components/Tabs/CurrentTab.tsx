@@ -28,6 +28,13 @@ export const CurrentTab: Component = () => {
     }
   };
 
+  const keyDownHandler = (e: KeyboardEvent) => {
+    if (e.key === 'Enter' && e.metaKey) {
+      callCurrentQuery();
+      e.preventDefault();
+    }
+  };
+
   return (
     <Show when={currentTab()}>
       {(tab) => (
@@ -39,6 +46,7 @@ export const CurrentTab: Component = () => {
             onInput={(e) => {
               setCurrentTabValue(e.currentTarget.value || '');
             }}
+            onkeydown={keyDownHandler}
           ></textarea>
           <Show when={tab.content.queryResponse}>
             {(response) => (

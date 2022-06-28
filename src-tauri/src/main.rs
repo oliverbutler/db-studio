@@ -4,16 +4,11 @@
 )]
 
 use cocoa::appkit::{NSWindow, NSWindowStyleMask, NSWindowTitleVisibility};
-use mysql::prelude::*;
-use mysql::*;
+use mysql::prelude::Queryable;
 use serde::{Deserialize, Serialize};
 use serde_json::Map;
-use std::path::Path;
-use tauri::Manager;
-use tauri::MenuEntry;
-use tauri::Runtime;
-use tauri::Window;
-use tauri::{CustomMenuItem, Menu, MenuItem, Submenu};
+use std::{mem, path::Path, sync::Mutex};
+use tauri::{CustomMenuItem, Manager, Menu, MenuEntry, MenuItem, Runtime, Submenu, Window};
 use ts_rs::TS;
 
 use window_vibrancy::{apply_vibrancy, NSVisualEffectMaterial};
@@ -90,19 +85,64 @@ struct InvokeExecuteQueryReturn {
   rows: Vec<Map<String, serde_json::Value>>,
 }
 
+fn create_db_conn(connection: &AppConnectionInformation) -> mysql::PooledConn {
+  let url = format!(
+    "mysql://{}:{}@{}:{}/{}",
+    connection.user, connection.password, connection.host, connection.port, connection.database,
+  );
+
+  let opts = mysql::Opts::from_url(&url).unwrap();
+
+  let pool = mysql::Pool::new(opts).unwrap();
+
+  let connection = pool.get_conn().unwrap();
+
+  connection
+}
+
+fn get_and_upsert_db_conn(state: &tauri::State<TauriState>, connection_id: &String) {
+  let curr_connection = state
+    .connections
+    .iter()
+    .find(|c| c.connection.id == connection_id.clone())
+    .unwrap();
+
+  let mut conn_mutex = curr_connection.conn.lock().unwrap();
+
+  if conn_mutex.is_none() {
+    println!("Creating connection to {}", connection_id);
+
+    let new_connection = create_db_conn(&curr_connection.connection.connection_information);
+
+    let _new = mem::replace(&mut *conn_mutex, Some(new_connection));
+  }
+}
+
 #[tauri::command]
 fn execute_query(
   state: tauri::State<TauriState>,
   connection_id: String,
   query: String,
-) -> InvokeExecuteQueryReturn {
-  let opts = Opts::from_url("mysql://user:password@127.0.0.1/db").unwrap();
+) -> Result<InvokeExecuteQueryReturn, String> {
+  get_and_upsert_db_conn(&state, &connection_id);
 
-  let pool = Pool::new(opts).unwrap();
+  let curr_connection = state
+    .connections
+    .iter()
+    .find(|c| c.connection.id == connection_id)
+    .unwrap();
 
-  let mut connection = pool.get_conn().unwrap();
+  let mut conn_mutex = match curr_connection.conn.lock() {
+    Ok(conn_mutex) => conn_mutex,
+    Err(_e) => return Err("Failed to lock connection mutex".to_string()),
+  };
 
-  let rows: Vec<Row> = connection.query(query.as_str()).unwrap();
+  let conn = conn_mutex.as_mut().unwrap();
+
+  let rows: Vec<mysql::Row> = match conn.query(query.as_str()) {
+    Ok(conn_mutex) => conn_mutex,
+    Err(e) => return Err(format!("{}", e)),
+  };
 
   let mut result = Vec::new();
   let mut columns = Vec::new();
@@ -123,16 +163,16 @@ fn execute_query(
     for (i, column) in row.columns().iter().enumerate() {
       let col_name = String::from(column.name_str());
 
-      let value: String = row.get(i).unwrap();
+      let value: String = String::from(row.get(i).unwrap_or("".to_string()));
       row_vec.insert(col_name, serde_json::json!(value));
     }
     result.push(row_vec);
   }
 
-  InvokeExecuteQueryReturn {
+  Ok(InvokeExecuteQueryReturn {
     columns: columns,
     rows: result,
-  }
+  })
 }
 
 #[derive(Debug, Serialize, Deserialize, Copy, Clone, TS)]
@@ -326,17 +366,7 @@ fn remove_connection(connection_id: String) {
 #[derive(Debug)]
 struct Connection {
   connection: AppConnection,
-  pool: mysql::PooledConn,
-}
-
-fn db_init() -> mysql::PooledConn {
-  let opts = Opts::from_url("mysql://user:password@127.0.0.1/db").unwrap();
-
-  let pool = Pool::new(opts).unwrap();
-
-  let connection = pool.get_conn().unwrap();
-
-  connection
+  conn: Mutex<Option<mysql::PooledConn>>,
 }
 
 #[derive(Debug)]
@@ -353,7 +383,7 @@ fn main() {
       .iter()
       .map(|connection| Connection {
         connection: connection.clone(),
-        pool: db_init(),
+        conn: Mutex::new(None),
       })
       .collect(),
   };

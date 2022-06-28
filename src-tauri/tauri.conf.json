@@ -65,7 +65,8 @@
         "resizable": true,
         "title": "DB Studio",
         "width": 1100,
-        "transparent": true
+        "transparent": true,
+        "focus": false
       }
     ]
   }
