@@ -85,37 +85,54 @@ struct InvokeExecuteQueryReturn {
   rows: Vec<Map<String, serde_json::Value>>,
 }
 
-fn create_db_conn(connection: &AppConnectionInformation) -> mysql::PooledConn {
+fn create_db_conn(connection: &AppConnectionInformation) -> Result<mysql::PooledConn, String> {
   let url = format!(
     "mysql://{}:{}@{}:{}/{}",
     connection.user, connection.password, connection.host, connection.port, connection.database,
   );
 
-  let opts = mysql::Opts::from_url(&url).unwrap();
+  let opts = match mysql::Opts::from_url(&url) {
+    Ok(opts) => opts,
+    Err(err) => return Err(format!("{}", err)),
+  };
 
-  let pool = mysql::Pool::new(opts).unwrap();
+  let pool = match mysql::Pool::new(opts) {
+    Ok(opts) => opts,
+    Err(err) => return Err(format!("{}", err)),
+  };
 
-  let connection = pool.get_conn().unwrap();
+  let connection = match pool.get_conn() {
+    Ok(opts) => opts,
+    Err(err) => return Err(format!("{}", err)),
+  };
 
-  connection
+  Ok(connection)
 }
 
-fn connect_to_db_if_missing(state: &tauri::State<TauriState>, connection_id: &String) {
-  let curr_connection = state
+fn connect_to_db_if_missing(
+  state: &tauri::State<TauriState>,
+  connection_id: &String,
+) -> Result<usize, String> {
+  let curr_connection_position = state
     .connections
     .iter()
-    .find(|c| c.connection.id == connection_id.clone())
+    .position(|c| c.connection.id == connection_id.clone())
     .unwrap();
+
+  let curr_connection = &state.connections[curr_connection_position];
 
   let mut conn_mutex = curr_connection.conn.lock().unwrap();
 
   if conn_mutex.is_none() {
-    println!("Creating connection to {}", connection_id);
-
-    let new_connection = create_db_conn(&curr_connection.connection.connection_information);
+    let new_connection = match create_db_conn(&curr_connection.connection.connection_information) {
+      Ok(conn) => conn,
+      Err(err) => return Err(err),
+    };
 
     let _new = mem::replace(&mut *conn_mutex, Some(new_connection));
   }
+
+  Ok(curr_connection_position)
 }
 
 #[tauri::command]
@@ -124,13 +141,12 @@ fn execute_query(
   connection_id: String,
   query: String,
 ) -> Result<InvokeExecuteQueryReturn, String> {
-  connect_to_db_if_missing(&state, &connection_id);
+  let conn_pos = match connect_to_db_if_missing(&state, &connection_id) {
+    Ok(pos) => pos,
+    Err(err) => return Err(err),
+  };
 
-  let curr_connection = state
-    .connections
-    .iter()
-    .find(|c| c.connection.id == connection_id)
-    .unwrap();
+  let curr_connection = &state.connections[conn_pos];
 
   let mut conn_mutex = match curr_connection.conn.lock() {
     Ok(conn_mutex) => conn_mutex,
@@ -176,7 +192,6 @@ fn execute_query(
         }
         _ => serde_json::Value::String(value.as_sql(false)),
       };
-      println!("{}", value_as_string);
       row_vec.insert(col_name, serde_json::json!(&value_as_string));
     }
     result.push(row_vec);

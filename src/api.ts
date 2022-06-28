@@ -68,12 +68,67 @@ const getConnection = async (connectionId: string) => {
 };
 
 const executeQuery = async (connectionId: string, query: string) => {
-  const result = await invokeExecuteQuery({
-    connectionId,
-    query,
-  });
+  try {
+    const result = await invokeExecuteQuery({
+      connectionId,
+      query,
+    });
 
-  return result;
+    return result;
+  } catch (e) {
+    displayError(e);
+    return null;
+  }
+};
+
+type ApiError = {
+  type: 'MySqlError' | 'DriverError' | 'unknown';
+  message: string;
+};
+
+const displayError = (error: any) => {
+  const { message } = extractError(error);
+  addToast({ message, type: 'error' });
+};
+
+const extractError = (error: any): ApiError => {
+  if (typeof error !== 'string') {
+    return {
+      type: 'unknown',
+      message: error,
+    };
+  }
+
+  // Remove everything other than between curly braces {}
+  const regex = /\{(.*?)\}/g;
+  const match = regex.exec(error);
+  if (!match) {
+    return {
+      type: 'unknown',
+      message: error,
+    };
+  }
+
+  const json = match[1];
+
+  if (error.includes('MySqlError')) {
+    return {
+      type: 'MySqlError',
+      message: json.split(':')[1],
+    };
+  }
+
+  if (error.includes('Driver')) {
+    return {
+      type: 'DriverError',
+      message: json,
+    };
+  }
+
+  return {
+    type: 'unknown',
+    message: json,
+  };
 };
 
 export const api = {
