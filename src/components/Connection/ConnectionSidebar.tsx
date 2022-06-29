@@ -1,5 +1,6 @@
 import { Component, createEffect, createSignal, For } from 'solid-js';
 import { currentConnection } from '../../data/connections';
+import { openTableTab } from '../../data/tabs';
 import { getTables } from '../../sql';
 
 export const ConnectionSidebar: Component = () => {
@@ -15,7 +16,13 @@ export const ConnectionSidebar: Component = () => {
 
   return (
     <div class="flex flex-col">
-      <For each={tables()}>{(table) => <div class="p-2">{table}</div>}</For>
+      <For each={tables()}>
+        {(table) => (
+          <div class="p-2" onclick={() => openTableTab(table)}>
+            {table}
+          </div>
+        )}
+      </For>
     </div>
   );
 };

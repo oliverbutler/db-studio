@@ -2,7 +2,7 @@ import { Component, Show } from 'solid-js';
 import { invokeExecuteQuery } from '../../../src-tauri/bindings/Invoke';
 import { api } from '../../api';
 import { currentConnection } from '../../data/connections';
-import { setState, state } from '../../data/state';
+import { setState, state, TabType } from '../../data/state';
 import { currentTab, setCurrentTabValue } from '../../data/tabs';
 import Button from '../Button';
 
@@ -11,21 +11,23 @@ export const CurrentTab: Component = () => {
     const tab = currentTab();
     const conn = currentConnection();
 
-    if (tab && conn) {
+    if (tab && conn && tab.content.type === TabType.Query) {
       const result = await api.executeQuery(
         conn.connectionInformation.connection_id,
         tab.content.query
       );
 
-      setState(
-        'connections',
-        state.currentConnectionId!,
-        'tabs',
-        (x) => x.id === tab.id,
-        'content',
-        'queryResponse',
-        result
-      );
+      if (result) {
+        setState(
+          'connections',
+          state.currentConnectionId!,
+          'tabs',
+          (x) => x.id === tab.id,
+          'content',
+          'queryResponse',
+          result
+        );
+      }
     }
   };
 

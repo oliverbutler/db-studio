@@ -33,11 +33,21 @@ export interface Connection {
 
 export enum TabType {
   Query = 'QUERY',
+  Table = 'TABLE',
 }
 
 export interface TabQuery {
-  type: TabType;
+  type: TabType.Query;
   query: string;
+  queryResponse: {
+    columns: Array<QueryColumn>;
+    rows: Record<string, unknown>[];
+  } | null;
+}
+
+export interface TabTable {
+  type: TabType.Table;
+  table: string;
   queryResponse: {
     columns: Array<QueryColumn>;
     rows: Record<string, unknown>[];
@@ -47,7 +57,7 @@ export interface TabQuery {
 export interface ITab {
   id: string;
   title: string;
-  content: TabQuery;
+  content: TabQuery | TabTable;
 }
 
 export interface Toast {

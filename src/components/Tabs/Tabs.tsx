@@ -1,19 +1,20 @@
 import classNames from 'classnames';
-import { Component, createSelector, For, JSX } from 'solid-js';
+import { Component, createSelector, For, JSX, Match, Switch } from 'solid-js';
 import { currentConnection } from '../../data/connections';
-import { ITab } from '../../data/state';
-import { addTab, removeTab, setCurrentTab } from '../../data/tabs';
+import { TabType } from '../../data/state';
+import { addTab, currentTab, removeTab, setCurrentTab } from '../../data/tabs';
 import { CurrentTab } from './CurrentTab';
+import { TabTable } from './TabTable';
 
 export const Tabs: Component = () => {
   const isTabActive = createSelector(
     () => currentConnection()?.currentTabId || false
   );
 
-  const handleClickTabClose = (e: MouseEvent, tab: ITab) => {
+  const handleClickTabClose = (e: MouseEvent, tabId: string) => {
     e.stopPropagation();
     e.preventDefault();
-    removeTab(tab.id);
+    removeTab(tabId);
   };
 
   return (
@@ -28,7 +29,10 @@ export const Tabs: Component = () => {
               })}
             >
               {tab.title}
-              <button class="ml-2" onClick={(e) => handleClickTabClose(e, tab)}>
+              <button
+                class="ml-2"
+                onClick={(e) => handleClickTabClose(e, tab.id)}
+              >
                 x
               </button>
             </div>
@@ -38,7 +42,14 @@ export const Tabs: Component = () => {
           +
         </button>
       </div>
-      <CurrentTab />
+      <Switch fallback={<div>Not Tabs</div>}>
+        <Match when={currentTab()?.content.type === TabType.Query}>
+          <CurrentTab />
+        </Match>
+        <Match when={currentTab()?.content.type === TabType.Table}>
+          <TabTable />
+        </Match>
+      </Switch>
     </div>
   );
 };

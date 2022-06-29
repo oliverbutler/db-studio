@@ -10,11 +10,31 @@ export const getEmptyTab = (queryNumber: number): ITab => ({
   content: {
     type: TabType.Query,
     query: '',
+    queryResponse: null,
   },
 });
 
 export const addTab = () => {
   const tab = getEmptyTab(getNumberOfQueries() + 1);
+
+  setState(
+    produce((x) => {
+      x.connections[x.currentConnectionId!].tabs.push(tab);
+      x.connections[x.currentConnectionId!].currentTabId = tab.id;
+    })
+  );
+};
+
+export const openTableTab = (table: string) => {
+  const tab: ITab = {
+    id: createUniqueId(),
+    title: table,
+    content: {
+      type: TabType.Table,
+      table,
+      tableResponse: null,
+    },
+  };
 
   setState(
     produce((x) => {
